@@ -2,9 +2,10 @@
 
 import { useRef, useState, KeyboardEvent } from 'react';
 
-const COLS  = 80;
-const ROWS  = 56;
-const TOTAL = COLS * ROWS;   // 4480
+const COLS  = 320;
+const ROWS  = 224;
+const TOTAL = COLS * ROWS;   // 71,680
+const PAD   = String(TOTAL).length;  // 5
 
 interface Props {
   selected:     number | null;
@@ -140,7 +141,7 @@ export default function SidePanel({ selected, onSelect, onReset, onFocusCell, co
               <div style={{ textAlign: 'center' }}>
                 <div style={{ ...AR, fontSize: 10, color: 'var(--muted)', marginBottom: 2 }}>الخلية</div>
                 <div style={{ ...NUM, fontSize: 20, fontWeight: 600, color: 'var(--accent-gold)', letterSpacing: '0.04em' }}>
-                  {selected.toString().padStart(4, '0')}
+                  {selected.toString().padStart(PAD, '0')}
                 </div>
               </div>
               <div style={{ width: 1, height: 32, background: 'var(--border)' }} />
@@ -302,7 +303,7 @@ export default function SidePanel({ selected, onSelect, onReset, onFocusCell, co
                 letterSpacing: '0.06em',
                 lineHeight: 1.1,
               }}>
-                {selected.toString().padStart(4, '0')}
+                {selected.toString().padStart(PAD, '0')}
               </div>
               <div style={{ ...AR, fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>رقم الخلية</div>
             </div>

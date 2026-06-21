@@ -4,20 +4,23 @@ import { useRef, useState, useEffect, useCallback, useImperativeHandle } from 'r
 import { gsap } from 'gsap';
 
 // ── Grid constants ────────────────────────────────────────────────────────────
-const COLS   = 80;
-const ROWS   = 56;
+const COLS   = 320;              // was 80 — cells are now 1/4 the size
+const ROWS   = 224;              // was 56
 const MAP_W  = 7680;
 const MAP_H  = 5376;
-const CELL_W = MAP_W / COLS;   // 96
-const CELL_H = MAP_H / ROWS;   // 96
+const CELL_W = MAP_W / COLS;    // 24 px in image space
+const CELL_H = MAP_H / ROWS;    // 24 px in image space
 
 const MIN_SCALE = 0.06;
-const MAX_SCALE = 5;
-const MAX_DPR   = 2;           // cap canvas resolution on high-DPR phones
+const MAX_SCALE = 8;
+const MAX_DPR   = 2;            // cap canvas resolution on high-DPR phones
 
-const GRID_COLOR  = 'rgba(201,150,61,0.22)';
-const HOVER_COLOR = 'rgba(201,150,61,0.18)';
-const SEL_COLOR   = 'rgba(200,48,58,0.30)';
+const GRID_COLOR  = 'rgba(201,150,61,0.30)';
+const HOVER_COLOR = 'rgba(201,150,61,0.22)';
+const SEL_COLOR   = 'rgba(200,48,58,0.38)';
+
+// Pad cell numbers to 5 digits (max 71,680)
+const PAD = String(COLS * ROWS).length;
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface MapViewHandle {
@@ -144,20 +147,31 @@ export default function MapView({ selected, onSelect, ref }: Props) {
     if (hovered.current && hovered.current !== selected) fillCell(hovered.current, HOVER_COLOR);
     if (selected) fillCell(selected, SEL_COLOR);
 
-    // Cell number label (only for hovered / selected)
-    const fontSize = Math.max(7, Math.min(14, CELL_W * s * 0.24));
-    ctx.font         = `500 ${fontSize}px Inter, sans-serif`;
-    ctx.textAlign    = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.globalAlpha  = 1;
+    // Cell number labels — only when cell is wide enough to read
+    const cellPx = CELL_W * s;
+    if (cellPx >= 16) {
+      const fontSize = Math.max(6, Math.min(13, cellPx * 0.38));
+      ctx.font         = `600 ${fontSize}px Inter, sans-serif`;
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.globalAlpha  = 1;
 
-    const labelCell = (n: number, color: string) => {
-      const { col, row } = cellFromNum(n);
-      ctx.fillStyle = color;
-      ctx.fillText(String(n), ox + (col + 0.5) * CELL_W * s, oy + (row + 0.5) * CELL_H * s);
-    };
-    if (hovered.current && hovered.current !== selected) labelCell(hovered.current, 'rgba(237,224,196,0.8)');
-    if (selected) labelCell(selected, '#EDE0C4');
+      const labelCell = (n: number, textColor: string, shadowColor: string) => {
+        const { col, row } = cellFromNum(n);
+        const tx = ox + (col + 0.5) * CELL_W * s;
+        const ty = oy + (row + 0.5) * CELL_H * s;
+        // Subtle shadow for legibility on any map background
+        ctx.fillStyle    = shadowColor;
+        ctx.shadowColor  = 'transparent';
+        ctx.fillText(String(n), tx + 0.5, ty + 0.5);
+        ctx.fillStyle = textColor;
+        ctx.fillText(String(n), tx, ty);
+      };
+      if (hovered.current && hovered.current !== selected)
+        labelCell(hovered.current, '#FFFFFF', 'rgba(0,0,0,0.55)');
+      if (selected)
+        labelCell(selected, '#FFFFFF', 'rgba(0,0,0,0.6)');
+    }
 
     ctx.restore();
     updateMarker(selected);
@@ -537,13 +551,13 @@ export default function MapView({ selected, onSelect, ref }: Props) {
               right: 0,
               textAlign: 'center',
               fontFamily: 'Inter, sans-serif',
-              fontSize: selected > 999 ? 7.5 : 9,
+              fontSize: selected > 9999 ? 6 : selected > 999 ? 7 : 9,
               fontWeight: 700,
               color: '#110810',
-              letterSpacing: '0.02em',
+              letterSpacing: '0.01em',
               lineHeight: 1,
             }}>
-              {selected.toString().padStart(4, '0')}
+              {selected.toString().padStart(PAD, '0')}
             </div>
           )}
         </div>
