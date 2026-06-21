@@ -366,7 +366,7 @@ export default function SidePanel({ selected, onSelect, onReset, onFocusCell, co
           إعادة تعيين العرض
         </button>
         <p style={{ ...AR, fontSize: 11, color: 'rgba(237,224,196,0.18)', textAlign: 'center', marginTop: 16 }}>
-          Team Cherry · فارلوم
+          حمزة · فارلوم
         </p>
       </div>
     </div>
