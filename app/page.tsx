@@ -15,9 +15,9 @@ export default function Home() {
   }, []);
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', background: '#09080F', overflow: 'hidden' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'row-reverse', background: '#09080F', overflow: 'hidden' }}>
 
-      {/* Desktop: side panel */}
+      {/* Desktop: side panel (right side in RTL) */}
       <div className="hidden md:flex">
         <SidePanel selected={selected} onSelect={setSelected} onReset={handleReset} />
       </div>
@@ -28,9 +28,7 @@ export default function Home() {
       </div>
 
       {/* Mobile: bottom panel */}
-      <div
-        className="md:hidden absolute bottom-0 left-0 right-0 z-30"
-      >
+      <div className="md:hidden absolute bottom-0 left-0 right-0 z-30">
         <SidePanel selected={selected} onSelect={setSelected} onReset={handleReset} compact />
       </div>
     </div>

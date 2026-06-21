@@ -353,6 +353,7 @@ export default function MapView({ selected, onSelect }: Props) {
       <canvas
         ref={canvasRef}
         className="absolute inset-0 w-full h-full"
+        style={{ touchAction: 'none' }}
         onMouseMove={onMouseMove}
         onMouseDown={onMouseDown}
         onMouseUp={onMouseUp}
@@ -380,20 +381,20 @@ export default function MapView({ selected, onSelect }: Props) {
       {/* Loading overlay */}
       {!ready && (
         <div className="absolute inset-0 flex flex-col items-center justify-center z-50" style={{ background: '#09080F' }}>
-          <p className="font-cinzel text-sm" style={{ color: 'var(--accent-gold)', letterSpacing: '0.2em' }}>
-            LOADING MAP OF PHARLOOM…
+          <p className="font-cinzel text-sm" style={{ color: 'var(--accent-gold)', letterSpacing: '0.15em' }}>
+            جارٍ تحميل خريطة فارلوم…
           </p>
           <div className="mt-4 w-48 h-px" style={{ background: 'linear-gradient(90deg, transparent, var(--accent-gold), transparent)', animation: 'pulse 1.5s ease-in-out infinite' }} />
         </div>
       )}
 
-      {/* Zoom controls */}
+      {/* Zoom controls — left side (LTR map, buttons stay on left) */}
       {ready && (
-        <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-20 md:bottom-6 md:right-6">
+        <div className="absolute bottom-4 left-3 flex flex-col gap-2 z-20 md:bottom-20 md:left-4">
           {[
-            { label: '+', fn: zoomIn,  title: 'Zoom In' },
-            { label: '−', fn: zoomOut, title: 'Zoom Out' },
-            { label: '⌖', fn: reset,   title: 'Reset View' },
+            { label: '+', fn: zoomIn,  title: 'تكبير'     },
+            { label: '−', fn: zoomOut, title: 'تصغير'     },
+            { label: '⌖', fn: reset,   title: 'إعادة ضبط' },
           ].map(({ label, fn, title }) => (
             <button
               key={label}
@@ -402,12 +403,12 @@ export default function MapView({ selected, onSelect }: Props) {
               title={title}
               className="glass font-cinzel flex items-center justify-center rounded"
               style={{
-                width: 40, height: 40,
+                width: 48, height: 48,
                 color: 'var(--accent-gold)',
-                fontSize: label === '⌖' ? 20 : 22,
+                fontSize: label === '⌖' ? 22 : 26,
                 fontWeight: 600,
                 border: '1px solid var(--border)',
-                transition: 'box-shadow 0.2s',
+                touchAction: 'manipulation',
               }}
               onMouseEnter={e => gsap.to(e.currentTarget, { boxShadow: '0 0 12px 2px rgba(201,150,61,0.3)', duration: 0.2 })}
               onMouseLeave={e => gsap.to(e.currentTarget, { boxShadow: 'none', duration: 0.2 })}
