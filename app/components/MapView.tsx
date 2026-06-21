@@ -442,7 +442,8 @@ export default function MapView({ selected, onSelect, ref }: Props) {
       const t = e.changedTouches[0];
       const n = numFromClient(t.clientX, t.clientY);
       onSelect(n === selected ? null : n);
-      if (n) focusCell(n);
+      // Do NOT call focusCell here — tap only selects, it does not pan/zoom.
+      // The view stays at current position so the tapped cell remains in sight.
     }
 
     dragging.current  = false;
@@ -485,70 +486,52 @@ export default function MapView({ selected, onSelect, ref }: Props) {
         className="absolute pointer-events-none"
         style={{ top: 0, left: 0, zIndex: 15, willChange: 'transform' }}
       >
-        {/* Inner: GSAP animates y/scale/opacity; margins center the needle tip */}
+        {/* Inner: GSAP animates y/scale/opacity; margins center bottom of image at cell */}
         <div
           ref={markerRef}
-          style={{ opacity: 0, marginLeft: -20, marginTop: -54 }}
+          style={{ opacity: 0, marginLeft: -26, marginTop: -56 }}
         >
-          {/* Pulse ring at needle tip */}
+          {/* Pulse ring at cell center point (bottom of image) */}
           <div style={{
             position: 'absolute',
-            bottom: -4,
+            bottom: -8,
             left: '50%',
-            width: 22, height: 22,
+            width: 24, height: 24,
             borderRadius: '50%',
-            background: 'rgba(200,48,58,0.14)',
+            background: 'rgba(200,48,58,0.18)',
             animation: 'pinRing 1.5s ease-out infinite',
           }} />
 
-          {/* Hornet-inspired mask marker — 40×54 SVG, needle tip at bottom center */}
-          <svg
-            width="40" height="54" viewBox="0 0 40 54"
-            fill="none" xmlns="http://www.w3.org/2000/svg"
-          >
-            <defs>
-              <radialGradient id="mg" cx="50%" cy="38%" r="62%">
-                <stop offset="0%" stopColor="#F0E6D0" />
-                <stop offset="100%" stopColor="#BBAA8A" />
-              </radialGradient>
-            </defs>
+          {/* Hornet mask image */}
+          <img
+            src="/hornet.png"
+            width={52}
+            height={52}
+            alt=""
+            draggable={false}
+            style={{
+              display: 'block',
+              filter: 'drop-shadow(0 0 6px rgba(201,150,61,0.75)) drop-shadow(0 2px 5px rgba(0,0,0,0.65))',
+              userSelect: 'none',
+              pointerEvents: 'none',
+            }}
+          />
 
-            {/* Left horn */}
-            <path d="M14 16 C12 9 9 4 7 0 C9 6 11 11 13 18" fill="#C9963D" opacity="0.9" />
-            <path d="M13 18 C11 11 9 6 7 0" stroke="#C9963D" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.5" />
-
-            {/* Right horn */}
-            <path d="M26 16 C28 9 31 4 33 0 C31 6 29 11 27 18" fill="#C9963D" opacity="0.9" />
-            <path d="M27 18 C29 11 31 6 33 0" stroke="#C9963D" strokeWidth="0.8" strokeLinecap="round" fill="none" opacity="0.5" />
-
-            {/* Mask face */}
-            <ellipse cx="20" cy="24" rx="13" ry="11" fill="url(#mg)" stroke="#C9963D" strokeWidth="1.1" />
-
-            {/* Eye slits */}
-            <ellipse cx="14" cy="22" rx="3.2" ry="1.7" fill="#110810" />
-            <ellipse cx="26" cy="22" rx="3.2" ry="1.7" fill="#110810" />
-
-            {/* Chin accent */}
-            <path d="M15 29 Q20 33 25 29" stroke="#C8303A" strokeWidth="1.4" strokeLinecap="round" fill="none" />
-
-            {/* Needle */}
-            <path d="M16 33 L20 52 L24 33" fill="#C8303A" stroke="#8B1A22" strokeWidth="0.7" strokeLinejoin="round" />
-          </svg>
-
-          {/* Cell number inside mask */}
+          {/* Cell number badge below image */}
           {selected && (
             <div style={{
-              position: 'absolute',
-              top: 17,
-              left: 0,
-              right: 0,
               textAlign: 'center',
               fontFamily: 'Inter, sans-serif',
-              fontSize: selected > 9999 ? 6 : selected > 999 ? 7 : 9,
+              fontSize: 10,
               fontWeight: 700,
-              color: '#110810',
-              letterSpacing: '0.01em',
-              lineHeight: 1,
+              color: '#EDE0C4',
+              letterSpacing: '0.04em',
+              background: 'rgba(9,8,15,0.78)',
+              border: '1px solid rgba(201,150,61,0.3)',
+              borderRadius: 4,
+              padding: '1px 5px',
+              marginTop: 3,
+              whiteSpace: 'nowrap',
             }}>
               {selected.toString().padStart(PAD, '0')}
             </div>
