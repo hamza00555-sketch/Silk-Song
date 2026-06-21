@@ -204,7 +204,7 @@ export default function MapView({ selected, onSelect, ref }: Props) {
     const W  = cW(canvas);
     const H  = cH(canvas);
     const { col, row } = cellFromNum(n);
-    const targetScale  = Math.max(0.45, scale.current);
+    const targetScale  = Math.max(2.0, scale.current);
     const obj = { s: scale.current, ox: offset.current.x, oy: offset.current.y };
     focusTween.current = gsap.to(obj, {
       s:  targetScale,
@@ -245,22 +245,15 @@ export default function MapView({ selected, onSelect, ref }: Props) {
   // Expose imperative API (React 19 — ref is a regular prop)
   useImperativeHandle(ref, () => ({ focusCell, resetView }), [focusCell, resetView]);
 
-  // ── Marker float animation ────────────────────────────────────────────────────
+  // ── Marker entrance — drops in and stays fixed (no float) ────────────────────
   const startMarkerFloat = useCallback(() => {
     const el = markerRef.current;
     if (!el) return;
     floatTween.current?.kill();
+    floatTween.current = null;
     gsap.fromTo(el,
-      { y: -20, opacity: 0, scale: 0.55 },
-      {
-        y: 0, opacity: 1, scale: 1,
-        duration: 0.48, ease: 'back.out(1.9)',
-        onComplete: () => {
-          floatTween.current = gsap.to(el, {
-            y: '-=7', duration: 1.3, ease: 'sine.inOut', yoyo: true, repeat: -1,
-          });
-        },
-      }
+      { y: -16, opacity: 0, scale: 0.65 },
+      { y: 0,   opacity: 1, scale: 1, duration: 0.42, ease: 'back.out(2)' }
     );
   }, []);
 
@@ -427,7 +420,7 @@ export default function MapView({ selected, onSelect, ref }: Props) {
     if (e.touches.length === 1 && lastTouch.current) {
       const dx = e.touches[0].clientX - lastTouch.current.x;
       const dy = e.touches[0].clientY - lastTouch.current.y;
-      if (Math.abs(dx) + Math.abs(dy) > 3) didDrag.current = true;
+      if (Math.abs(dx) + Math.abs(dy) > 6) didDrag.current = true;
       offset.current.x += dx;
       offset.current.y += dy;
       clamp(); scheduleDraw();
