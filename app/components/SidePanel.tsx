@@ -1,70 +1,61 @@
 'use client';
 
-import { useRef, useState, useEffect, KeyboardEvent } from 'react';
-import { gsap } from 'gsap';
+import { useRef, useState, KeyboardEvent } from 'react';
 
 const COLS  = 80;
 const ROWS  = 56;
-const TOTAL = COLS * ROWS;
+const TOTAL = COLS * ROWS;   // 4480
 
 interface Props {
-  selected: number | null;
-  onSelect: (n: number | null) => void;
-  onReset:  () => void;
-  compact?: boolean;
+  selected:     number | null;
+  onSelect:     (n: number | null) => void;
+  onReset:      () => void;
+  onFocusCell:  (n: number) => void;
+  compact?:     boolean;
 }
 
-export default function SidePanel({ selected, onSelect, onReset, compact = false }: Props) {
-  const panelRef = useRef<HTMLDivElement>(null);
+const AR  = { fontFamily: 'Tajawal, sans-serif' } as const;
+const NUM = { fontFamily: 'Inter, sans-serif'   } as const;
+
+export default function SidePanel({ selected, onSelect, onReset, onFocusCell, compact = false }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [query,  setQuery]  = useState('');
-  const [error,  setError]  = useState('');
-  const [flash,  setFlash]  = useState(false);
+  const [query, setQuery] = useState('');
+  const [error, setError] = useState('');
 
-  useEffect(() => {
-    if (!panelRef.current) return;
-    gsap.fromTo(panelRef.current,
-      { opacity: 0, x: compact ? 0 : -32, y: compact ? 40 : 0 },
-      { opacity: 1, x: 0, y: 0, duration: 0.55, ease: 'power2.out', delay: 0.15 }
-    );
-  }, [compact]);
-
-  useEffect(() => {
-    if (!selected) return;
-    setFlash(true);
-    const t = setTimeout(() => setFlash(false), 600);
-    return () => clearTimeout(t);
-  }, [selected]);
+  const row = selected ? Math.ceil(selected / COLS) : null;
+  const col = selected ? ((selected - 1) % COLS) + 1 : null;
 
   const handleSearch = () => {
     const n = parseInt(query.trim(), 10);
     if (isNaN(n) || n < 1 || n > TOTAL) {
-      setError(`لا توجد خلية بهذا الرقم. أدخل رقماً من 1 إلى ${TOTAL.toLocaleString('ar')}.`);
-      gsap.fromTo(inputRef.current, { x: -6 }, { x: 0, duration: 0.35, ease: 'elastic.out(1,0.4)' });
+      setError(`أدخل رقماً بين 1 و ${TOTAL.toLocaleString('ar')}.`);
+      inputRef.current?.focus();
       return;
     }
     setError('');
     onSelect(n);
-    if ((window as any).__mapFocusCell) (window as any).__mapFocusCell(n);
+    onFocusCell(n);
+    if (compact) setQuery('');
   };
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') handleSearch();
   };
 
-  const row = selected ? Math.ceil(selected / COLS) : null;
-  const col = selected ? ((selected - 1) % COLS) + 1 : null;
-
-  /* ─── Mobile bottom panel ─────────────────────────────────────── */
+  /* ── Mobile bottom sheet ────────────────────────────────────────────────── */
   if (compact) {
     return (
       <div
-        ref={panelRef}
         className="glass w-full"
-        style={{ borderTop: '1px solid var(--border)', opacity: 0, direction: 'rtl' }}
+        style={{
+          borderTop: '1px solid var(--border)',
+          direction: 'rtl',
+          animation: 'sheetIn 0.4s cubic-bezier(0.22,1,0.36,1) both',
+        }}
+        aria-label="لوحة البحث"
       >
-        {/* Search row */}
-        <div className="flex items-center gap-2 px-3 py-2">
+        {/* Row 1 — search */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px 6px' }}>
           <input
             ref={inputRef}
             type="number"
@@ -75,41 +66,51 @@ export default function SidePanel({ selected, onSelect, onReset, compact = false
             onChange={e => { setQuery(e.target.value); setError(''); }}
             onKeyDown={onKey}
             placeholder="رقم الخلية…"
-            className="flex-1 bg-transparent font-crimson outline-none text-right"
+            aria-label="ابحث عن خلية"
             style={{
-              color: 'var(--cream)',
-              border: '1px solid var(--border)',
-              borderRadius: 8,
-              padding: '10px 12px',
+              flex: 1,
+              ...AR,
               fontSize: 16,
+              background: 'rgba(255,255,255,0.04)',
+              border: error ? '1px solid var(--accent-red)' : '1px solid var(--border)',
+              borderRadius: 10,
+              padding: '9px 12px',
+              color: 'var(--cream)',
+              outline: 'none',
+              textAlign: 'right',
               minWidth: 0,
             }}
           />
           <button
             onClick={handleSearch}
-            className="font-cinzel text-xs rounded"
+            aria-label="بحث"
             style={{
-              background: 'linear-gradient(135deg, var(--accent-red), #8B1A22)',
+              ...AR, fontSize: 14, fontWeight: 600,
+              background: 'var(--accent-red)',
               color: 'var(--cream)',
-              border: '1px solid rgba(200,48,58,0.4)',
-              minHeight: 44,
-              minWidth: 64,
-              fontSize: 13,
-              fontFamily: 'Cinzel, serif',
+              border: 'none',
+              borderRadius: 10,
+              height: 42,
+              paddingInline: 16,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
             }}
           >
             بحث
           </button>
           <button
-            onClick={onReset}
-            className="font-cinzel text-xs rounded"
+            onClick={() => { onReset(); setQuery(''); setError(''); }}
+            aria-label="إعادة تعيين"
             style={{
-              background: 'var(--surface)',
+              ...NUM, fontSize: 16,
+              background: 'rgba(255,255,255,0.05)',
               color: 'var(--muted)',
               border: '1px solid var(--border)',
-              minHeight: 44,
-              minWidth: 44,
-              fontSize: 18,
+              borderRadius: 10,
+              width: 42, height: 42,
+              cursor: 'pointer',
+              flexShrink: 0,
             }}
           >
             ✕
@@ -117,76 +118,100 @@ export default function SidePanel({ selected, onSelect, onReset, compact = false
         </div>
 
         {error && (
-          <p className="px-3 pb-2 text-xs text-right" style={{ color: 'var(--accent-red)', fontFamily: 'Crimson Pro, serif' }}>
+          <p role="alert" style={{ ...AR, fontSize: 12, color: 'var(--accent-red)', textAlign: 'right', padding: '0 12px 6px' }}>
             {error}
           </p>
         )}
 
-        {selected && (
-          <div
-            className="flex items-center justify-around px-3 pb-3 pt-2"
-            style={{
-              borderTop: '1px solid var(--border)',
-              animation: flash ? 'fadeSlideIn 0.35s ease' : undefined,
-            }}
-          >
-            <div className="text-center">
-              <p className="font-cinzel text-xs" style={{ color: 'var(--muted)', fontSize: 10, letterSpacing: '0.1em' }}>الخلية</p>
-              <p className="font-cinzel-deco" style={{ color: 'var(--accent-gold)', fontSize: 22, lineHeight: 1.2 }}>
-                {selected.toString().padStart(4, '0')}
-              </p>
-            </div>
-            <div style={{ width: 1, height: 36, background: 'var(--border)' }} />
-            <div className="text-center">
-              <p className="font-cinzel text-xs" style={{ color: 'var(--muted)', fontSize: 10 }}>الصف</p>
-              <p className="font-cinzel" style={{ color: 'var(--cream)', fontSize: 18 }}>{row}</p>
-            </div>
-            <div style={{ width: 1, height: 36, background: 'var(--border)' }} />
-            <div className="text-center">
-              <p className="font-cinzel text-xs" style={{ color: 'var(--muted)', fontSize: 10 }}>العمود</p>
-              <p className="font-cinzel" style={{ color: 'var(--cream)', fontSize: 18 }}>{col}</p>
-            </div>
-          </div>
-        )}
+        {/* Row 2 — coordinate info (fixed height, no resize) */}
+        <div
+          aria-live="polite"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-around',
+            padding: '6px 12px 10px',
+            borderTop: '1px solid var(--border)',
+            minHeight: 52,
+          }}
+        >
+          {selected ? (
+            <>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ ...AR, fontSize: 10, color: 'var(--muted)', marginBottom: 2 }}>الخلية</div>
+                <div style={{ ...NUM, fontSize: 20, fontWeight: 600, color: 'var(--accent-gold)', letterSpacing: '0.04em' }}>
+                  {selected.toString().padStart(4, '0')}
+                </div>
+              </div>
+              <div style={{ width: 1, height: 32, background: 'var(--border)' }} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ ...AR, fontSize: 10, color: 'var(--muted)', marginBottom: 2 }}>الصف</div>
+                <div style={{ ...NUM, fontSize: 18, fontWeight: 500, color: 'var(--cream)' }}>{row}</div>
+              </div>
+              <div style={{ width: 1, height: 32, background: 'var(--border)' }} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ ...AR, fontSize: 10, color: 'var(--muted)', marginBottom: 2 }}>العمود</div>
+                <div style={{ ...NUM, fontSize: 18, fontWeight: 500, color: 'var(--cream)' }}>{col}</div>
+              </div>
+            </>
+          ) : (
+            <p style={{ ...AR, fontSize: 13, color: 'var(--muted)', textAlign: 'center' }}>
+              اضغط على خلية أو ابحث برقمها
+            </p>
+          )}
+        </div>
       </div>
     );
   }
 
-  /* ─── Desktop side panel ──────────────────────────────────────── */
+  /* ── Desktop side panel ─────────────────────────────────────────────────── */
   return (
     <div
-      ref={panelRef}
-      className="glass flex flex-col overflow-hidden"
+      className="glass flex flex-col"
       style={{
-        width: 280,
-        minWidth: 280,
+        width: 288,
+        minWidth: 288,
         height: '100%',
-        opacity: 0,
         borderLeft: '1px solid var(--border)',
         direction: 'rtl',
+        animation: 'panelIn 0.45s cubic-bezier(0.22,1,0.36,1) both',
+        overflow: 'hidden',
       }}
+      aria-label="لوحة الخريطة"
     >
       {/* Header */}
-      <div className="px-5 pt-6 pb-4 text-right">
-        <p className="font-cinzel-deco text-xs tracking-widest" style={{ color: 'var(--accent-gold)' }}>
+      <div style={{ padding: '24px 20px 18px' }}>
+        <div style={{
+          fontFamily: 'Cinzel, serif',
+          fontSize: 10,
+          fontWeight: 600,
+          letterSpacing: '0.2em',
+          color: 'var(--accent-gold)',
+          marginBottom: 8,
+          textTransform: 'uppercase',
+        }}>
           SILK·SONG
-        </p>
-        <h1 className="font-cinzel text-lg mt-1 leading-tight" style={{ color: 'var(--cream)' }}>
+        </div>
+        <h1 style={{ ...AR, fontSize: 20, fontWeight: 700, color: 'var(--cream)', lineHeight: 1.2, marginBottom: 4 }}>
           خريطة فارلوم
         </h1>
-        <p className="font-crimson text-xs mt-1 italic" style={{ color: 'var(--muted)' }}>
+        <p style={{ ...AR, fontSize: 12, fontWeight: 300, color: 'var(--muted)' }}>
           {COLS}×{ROWS} شبكة · {TOTAL.toLocaleString('ar')} خلية
         </p>
       </div>
 
-      <div className="divider mx-5" />
+      <div className="divider" style={{ margin: '0 20px' }} />
 
       {/* Search */}
-      <div className="px-5 pt-4 pb-3">
-        <label className="font-cinzel text-xs block mb-2 text-right" style={{ color: 'var(--muted)', letterSpacing: '0.08em' }}>
+      <div style={{ padding: '16px 20px 14px' }}>
+        <label
+          htmlFor="cell-search"
+          style={{ ...AR, fontSize: 11, fontWeight: 500, color: 'var(--muted)', display: 'block', textAlign: 'right', marginBottom: 8 }}
+        >
           ابحث عن خلية
         </label>
         <input
+          id="cell-search"
           ref={inputRef}
           type="number"
           inputMode="numeric"
@@ -196,105 +221,150 @@ export default function SidePanel({ selected, onSelect, onReset, compact = false
           onChange={e => { setQuery(e.target.value); setError(''); }}
           onKeyDown={onKey}
           placeholder={`1 – ${TOTAL.toLocaleString('ar')}`}
-          className="w-full bg-transparent font-crimson text-sm outline-none text-right"
+          aria-label="رقم الخلية"
+          aria-describedby={error ? 'search-error' : undefined}
           style={{
-            color: 'var(--cream)',
-            border: '1px solid var(--border)',
-            borderRadius: 8,
+            width: '100%',
+            ...NUM,
+            fontSize: 16,
+            background: 'rgba(255,255,255,0.04)',
+            border: error ? '1px solid rgba(200,48,58,0.55)' : '1px solid var(--border)',
+            borderRadius: 10,
             padding: '10px 14px',
-            background: 'rgba(0,0,0,0.3)',
+            color: 'var(--cream)',
+            outline: 'none',
+            textAlign: 'right',
+            transition: 'border-color 0.2s',
           }}
         />
         {error && (
-          <p className="mt-2 text-xs font-crimson text-right" style={{ color: 'var(--accent-red)' }}>{error}</p>
+          <p
+            id="search-error"
+            role="alert"
+            style={{ ...AR, fontSize: 11, color: 'var(--accent-red)', textAlign: 'right', marginTop: 6 }}
+          >
+            {error}
+          </p>
         )}
         <button
           onClick={handleSearch}
-          className="w-full mt-3 font-cinzel text-xs py-3 rounded"
+          aria-label="تحديد الموقع"
           style={{
-            background: 'linear-gradient(135deg, #8B1A22, var(--accent-red))',
+            display: 'block',
+            width: '100%',
+            marginTop: 10,
+            padding: '11px 0',
+            background: 'var(--accent-red)',
+            border: 'none',
+            borderRadius: 10,
             color: 'var(--cream)',
-            border: '1px solid rgba(200,48,58,0.35)',
-            letterSpacing: '0.12em',
-            fontSize: 13,
+            ...AR,
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+            letterSpacing: '0.04em',
+            transition: 'opacity 0.15s, transform 0.12s',
           }}
-          onMouseEnter={e => gsap.to(e.currentTarget, { scale: 1.03, duration: 0.18 })}
-          onMouseLeave={e => gsap.to(e.currentTarget, { scale: 1,    duration: 0.18 })}
-          onMouseDown={e  => gsap.to(e.currentTarget, { scale: 0.97, duration: 0.1  })}
-          onMouseUp={e    => gsap.to(e.currentTarget, { scale: 1.03, duration: 0.15 })}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.85'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; }}
+          onMouseDown={e  => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.97)'; }}
+          onMouseUp={e    => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
         >
           تحديد الموقع
         </button>
       </div>
 
-      <div className="divider mx-5" />
+      <div className="divider" style={{ margin: '0 20px' }} />
 
-      {/* Selected info */}
-      <div className="px-5 pt-4 flex-1">
-        <p className="font-cinzel text-xs text-right mb-3" style={{ color: 'var(--muted)', letterSpacing: '0.08em' }}>
+      {/* Selected coordinate */}
+      <div style={{ padding: '16px 20px 0', flex: 1, minHeight: 0 }}>
+        <p style={{ ...AR, fontSize: 11, fontWeight: 500, color: 'var(--muted)', textAlign: 'right', marginBottom: 12 }}>
           الإحداثية المحددة
         </p>
 
         {selected ? (
           <div
-            className="rounded p-4"
+            aria-live="polite"
             style={{
-              background: 'rgba(200,48,58,0.08)',
-              border: '1px solid rgba(200,48,58,0.25)',
-              animation: flash ? 'fadeSlideIn 0.35s ease' : undefined,
+              background: 'rgba(200,48,58,0.07)',
+              border: '1px solid rgba(200,48,58,0.2)',
+              borderRadius: 12,
+              padding: '16px',
+              animation: 'fadeUp 0.3s ease both',
             }}
           >
-            <div className="text-center mb-3">
-              <p className="font-cinzel-deco" style={{ fontSize: 38, color: 'var(--accent-gold)', lineHeight: 1.1 }}>
+            <div style={{ textAlign: 'center', marginBottom: 12 }}>
+              <div style={{
+                ...NUM,
+                fontSize: 42,
+                fontWeight: 600,
+                color: 'var(--accent-gold)',
+                letterSpacing: '0.06em',
+                lineHeight: 1.1,
+              }}>
                 {selected.toString().padStart(4, '0')}
-              </p>
-              <p className="font-crimson text-xs italic mt-1" style={{ color: 'var(--muted)' }}>
-                رقم الخلية
-              </p>
+              </div>
+              <div style={{ ...AR, fontSize: 11, color: 'var(--muted)', marginTop: 4 }}>رقم الخلية</div>
             </div>
 
             <div className="divider" />
 
-            <div className="flex justify-around mt-3">
-              <div className="text-center">
-                <p className="font-cinzel text-xs" style={{ color: 'var(--muted)', fontSize: 10 }}>الصف</p>
-                <p className="font-cinzel mt-1" style={{ color: 'var(--cream)', fontSize: 24 }}>{row}</p>
+            <div style={{ display: 'flex', justifyContent: 'space-around', marginTop: 12 }}>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ ...AR, fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>الصف</div>
+                <div style={{ ...NUM, fontSize: 26, fontWeight: 500, color: 'var(--cream)' }}>{row}</div>
               </div>
-              <div style={{ width: 1, background: 'var(--border)' }} />
-              <div className="text-center">
-                <p className="font-cinzel text-xs" style={{ color: 'var(--muted)', fontSize: 10 }}>العمود</p>
-                <p className="font-cinzel mt-1" style={{ color: 'var(--cream)', fontSize: 24 }}>{col}</p>
+              <div style={{ width: 1, background: 'var(--border)', margin: '0 4px' }} />
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ ...AR, fontSize: 11, color: 'var(--muted)', marginBottom: 4 }}>العمود</div>
+                <div style={{ ...NUM, fontSize: 26, fontWeight: 500, color: 'var(--cream)' }}>{col}</div>
               </div>
             </div>
           </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="font-crimson text-sm italic" style={{ color: 'var(--muted)', lineHeight: 1.8 }}>
-              مرر المؤشر فوق خلية<br />لعرض إحداثيتها
+          <div aria-live="polite" style={{ textAlign: 'center', padding: '28px 0' }}>
+            <p style={{ ...AR, fontSize: 13, color: 'var(--muted)', lineHeight: 1.8 }}>
+              مرر المؤشر فوق خلية<br />أو ابحث برقمها
             </p>
           </div>
         )}
       </div>
 
-      {/* Reset */}
-      <div className="px-5 pb-6 pt-3">
-        <div className="divider mb-4" />
+      {/* Footer */}
+      <div style={{ padding: '16px 20px 24px' }}>
+        <div className="divider" style={{ marginBottom: 14 }} />
         <button
-          onClick={onReset}
-          className="w-full font-cinzel text-xs py-2.5 rounded"
+          onClick={() => { onReset(); setQuery(''); setError(''); }}
+          aria-label="إعادة تعيين العرض"
           style={{
-            background: 'rgba(0,0,0,0.3)',
-            color: 'var(--muted)',
+            display: 'block',
+            width: '100%',
+            padding: '10px 0',
+            background: 'rgba(255,255,255,0.04)',
             border: '1px solid var(--border)',
-            letterSpacing: '0.1em',
-            fontSize: 12,
+            borderRadius: 10,
+            color: 'var(--muted)',
+            ...AR,
+            fontSize: 13,
+            fontWeight: 400,
+            cursor: 'pointer',
+            letterSpacing: '0.04em',
+            transition: 'border-color 0.18s, color 0.18s',
           }}
-          onMouseEnter={e => gsap.to(e.currentTarget, { borderColor: 'var(--accent-gold)', color: 'var(--accent-gold)', duration: 0.2 })}
-          onMouseLeave={e => gsap.to(e.currentTarget, { borderColor: 'var(--border)',      color: 'var(--muted)',       duration: 0.2 })}
+          onMouseEnter={e => {
+            const el = e.currentTarget as HTMLButtonElement;
+            el.style.borderColor = 'rgba(201,150,61,0.4)';
+            el.style.color = 'var(--accent-gold)';
+          }}
+          onMouseLeave={e => {
+            const el = e.currentTarget as HTMLButtonElement;
+            el.style.borderColor = 'var(--border)';
+            el.style.color = 'var(--muted)';
+          }}
         >
           إعادة تعيين العرض
         </button>
-        <p className="text-center font-crimson text-xs italic mt-4" style={{ color: 'rgba(237,224,196,0.2)' }}>
+        <p style={{ ...AR, fontSize: 11, color: 'rgba(237,224,196,0.18)', textAlign: 'center', marginTop: 16 }}>
           Team Cherry · فارلوم
         </p>
       </div>

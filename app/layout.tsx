@@ -16,7 +16,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ar" dir="rtl" className="h-full">
-      <body className="h-full overflow-hidden" style={{ background: '#09080F' }}>
+      <body className="h-full overflow-hidden" style={{ background: '#09080F', fontFamily: 'Tajawal, sans-serif' }}>
         {children}
       </body>
     </html>
