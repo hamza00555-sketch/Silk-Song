@@ -511,7 +511,7 @@ export default function MapView({ selected, onSelect, ref }: Props) {
             draggable={false}
             style={{
               display: 'block',
-              filter: 'drop-shadow(0 0 6px rgba(201,150,61,0.75)) drop-shadow(0 2px 5px rgba(0,0,0,0.65))',
+              filter: 'drop-shadow(0 0 8px rgba(200,48,58,0.85)) drop-shadow(0 0 3px rgba(200,48,58,0.5)) drop-shadow(0 2px 5px rgba(0,0,0,0.65))',
               userSelect: 'none',
               pointerEvents: 'none',
             }}
