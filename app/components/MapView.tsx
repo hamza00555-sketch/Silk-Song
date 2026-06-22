@@ -11,8 +11,9 @@ const MAP_H  = 5376;
 const CELL_W = MAP_W / COLS;    // 24 px in image space
 const CELL_H = MAP_H / ROWS;    // 24 px in image space
 
-const MIN_SCALE = 0.06;
-const MAX_SCALE = 8;
+const MIN_SCALE     = 0.06;
+const MAX_SCALE     = 8;
+const MIN_READABLE  = 2.0;  // minimum scale at which cell numbers are legible (used by search focus)
 const MAX_DPR   = 2;            // cap canvas resolution on high-DPR phones
 
 const GRID_COLOR  = 'rgba(201,150,61,0.30)';
@@ -186,6 +187,8 @@ export default function MapView({ selected, onSelect, ref }: Props) {
 
   // ── Zoom (pivot in CSS pixels) ────────────────────────────────────────────────
   const applyZoom = useCallback((delta: number, px: number, py: number) => {
+    // Any manual zoom immediately cancels a running search/focus animation.
+    focusTween.current?.kill();
     const old  = scale.current;
     const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, old * (1 + delta)));
     const r    = next / old;
@@ -196,7 +199,7 @@ export default function MapView({ selected, onSelect, ref }: Props) {
     scheduleDraw();
   }, [clamp, scheduleDraw]);
 
-  // ── Animated pan+zoom to a cell ───────────────────────────────────────────────
+  // ── Navigate to cell — search only. Never zoom out; zoom in only if unreadable ─
   const focusCell = useCallback((n: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -204,7 +207,8 @@ export default function MapView({ selected, onSelect, ref }: Props) {
     const W  = cW(canvas);
     const H  = cH(canvas);
     const { col, row } = cellFromNum(n);
-    const targetScale  = Math.max(2.0, scale.current);
+    // Preserve zoom if already readable; only zoom in if too far out.
+    const targetScale = Math.max(MIN_READABLE, scale.current);
     const obj = { s: scale.current, ox: offset.current.x, oy: offset.current.y };
     focusTween.current = gsap.to(obj, {
       s:  targetScale,
